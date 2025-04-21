@@ -1,0 +1,55 @@
+.emoji-mappings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1em;
+}
+
+.emoji-mappings-table th, .emoji-mappings-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.emoji-mappings-table th {
+    font-weight: bold;
+    border-bottom: 2px solid var(--background-modifier-border);
+    font-size: 1em;
+    font-family: inherit;
+}
+
+.emoji-emoji-cell {
+    width: 15%;
+    font-size: 1.2em;
+}
+
+.emoji-shortcode-cell {
+    width: 30%;
+    font-family: monospace;
+}
+
+.emoji-icon-cell {
+    width: 15%;
+}
+
+.emoji-icon-cell svg {
+    width: 24px;
+    height: 24px;
+}
+
+.emoji-actions-cell {
+    width: 15%;
+    text-align: center;
+}
+
+.emoji-delete-button {
+    background-color: var(--background-modifier-error);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.emoji-delete-button:hover {
+    background-color: var(--background-modifier-error-hover);
+}
