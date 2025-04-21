@@ -14,7 +14,9 @@ Replace emojis with icons from the Icon Shortcodes plugin in your Obsidian notes
 - Automatically converts emoji characters to their corresponding Icon Shortcodes plugin format
 - Seamless integration with existing Icon Shortcodes plugin
 - Works in both edit and preview modes
-- Compatible with desktop and mobile versions of Obsidian
+- Compatible with desktop and mobile versions of Obsidian*
+
+\* Note: On mobile devices, the automatic emoji-to-icon conversion (using node-emoji) is not available due to Node.js API limitations. However, custom emoji mappings will still work on mobile devices.
 
 ## Installation
 

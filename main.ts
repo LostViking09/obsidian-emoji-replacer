@@ -206,7 +206,7 @@ class EmojiReplacerSettingTab extends PluginSettingTab {
 			});
 			
 			mobileNotice.createEl('p', {
-				text: 'Note: Default icon search is disabled on mobile devices due to compatibility issues with node-emoji. Custom mappings will still work.',
+				text: 'Note: Default icon search is disabled on mobile devices because node-emoji requires Node.js APIs that are not available on mobile platforms. Only custom emoji mappings will work on mobile devices.',
 				attr: { style: 'margin: 0; color: var(--text-normal);' }
 			});
 		}
