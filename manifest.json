@@ -1,7 +1,7 @@
 {
 	"id": "emoji-replacer",
 	"name": "Emoji Replacer",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Replace emojis with icons from the Icon Shortcodes plugin.",
 	"author": "LostViking09",
