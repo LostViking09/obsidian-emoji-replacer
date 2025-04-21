@@ -21,76 +21,78 @@ export default class EmojiReplacer extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		
-		// Detect if running on mobile
 		this.isMobileDevice = Platform.isMobile;
 
-		const iconSC = getApi();
-		if (!iconSC) { 
-			// Show modal explaining the dependency requirement
-			new MissingDependencyModal(this.app).open();
-			return; 
-		}
-        
-        this.registerMarkdownPostProcessor((element) => {
-            element.querySelectorAll("p, li, div").forEach(async (el) => {
-                if (el.textContent) {
-                    // Process each character in the text content
-                    for (const char of el.textContent) {
-                        // First check if we have a custom mapping for this emoji
-                        if (this.settings.customEmojiMappings[char]) {
-                            const customIconId = this.settings.customEmojiMappings[char];
-                            
-                            if (iconSC.hasIcon(customIconId)) {
-                                const svg = await iconSC.getSVGIcon(customIconId);
-                                if (svg) {
-                                    el.innerHTML = el.innerHTML.replace(char, svg.outerHTML);
-                                    continue; // Skip to next character after replacement
-                                }
-                            }
-                        }
-                        
-                        // Skip node-emoji functionality on mobile devices
-                        if (this.isMobileDevice) {
-                            continue; // Skip to next character without using node-emoji
-                        }
-                        
-                        // Fall back to default logic if enabled and no custom mapping or if custom mapping failed
-                        if (this.settings.enableDefaultIconSearch && iconSC.isEmoji(char)) {
-                            try {
-                                // Dynamically import node-emoji only when needed (on desktop)
-                                if (!this.emojiModule) {
-                                    try {
-                                        // Dynamic import
-                                        this.emojiModule = await import("node-emoji");
-                                    } catch (importError) {
-                                        console.error("Failed to import node-emoji:", importError);
-                                        continue; // Skip this character if import fails
-                                    }
-                                }
-                                
-                                // Now use the dynamically imported module
-                                const emojiData = this.emojiModule.find(char);
-                                if (emojiData) {
-                                    // Convert emoji shortcode to potential Lucide icon name
-                                    const lucideId = `luc_${emojiData.key}`;
-                                    if (iconSC.hasIcon(lucideId)) {
-                                        const svg = await iconSC.getSVGIcon(lucideId);
-                                        if (svg) {
-                                            el.innerHTML = el.innerHTML.replace(char, svg.outerHTML);
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.error("Error using node-emoji:", error);
-                                // Silently fail on error - this allows the plugin to continue working
-                                // even if node-emoji throws an error
-                            }
-                        }
-                    }
-                }
-            });
-        });
+		// Wait for layout to be ready before checking for dependencies
+		this.app.workspace.onLayoutReady(() => {
+			const iconSC = getApi();
+			if (!iconSC) { 
+				// Show modal explaining the dependency requirement
+				new MissingDependencyModal(this.app).open();
+				return; 
+			}
+			
+			this.registerMarkdownPostProcessor((element) => {
+				element.querySelectorAll("p, li, div").forEach(async (el) => {
+					if (el.textContent) {
+						// Process each character in the text content
+						for (const char of el.textContent) {
+							// First check if we have a custom mapping for this emoji
+							if (this.settings.customEmojiMappings[char]) {
+							const customIconId = this.settings.customEmojiMappings[char];
+							
+							if (iconSC.hasIcon(customIconId)) {
+								const svg = await iconSC.getSVGIcon(customIconId);
+								if (svg) {
+									el.innerHTML = el.innerHTML.replace(char, svg.outerHTML);
+									continue; // Skip to next character after replacement
+								}
+							}
+							}
+							
+							// Skip node-emoji functionality on mobile devices
+							if (this.isMobileDevice) {
+								continue; // Skip to next character without using node-emoji
+							}
+							
+							// Fall back to default logic if enabled and no custom mapping or if custom mapping failed
+							if (this.settings.enableDefaultIconSearch && iconSC.isEmoji(char)) {
+								try {
+									// Dynamically import node-emoji only when needed (on desktop)
+									if (!this.emojiModule) {
+										try {
+											// Dynamic import
+											this.emojiModule = await import("node-emoji");
+										} catch (importError) {
+											console.error("Failed to import node-emoji:", importError);
+											continue; // Skip this character if import fails
+										}
+									}
+									
+									// Now use the dynamically imported module
+									const emojiData = this.emojiModule.find(char);
+									if (emojiData) {
+										// Convert emoji shortcode to potential Lucide icon name
+										const lucideId = `luc_${emojiData.key}`;
+										if (iconSC.hasIcon(lucideId)) {
+											const svg = await iconSC.getSVGIcon(lucideId);
+											if (svg) {
+												el.innerHTML = el.innerHTML.replace(char, svg.outerHTML);
+											}
+										}
+									}
+								} catch (error) {
+									console.error("Error using node-emoji:", error);
+									// Silently fail on error - this allows the plugin to continue working
+									// even if node-emoji throws an error
+								}
+							}
+						}
+					}
+				});
+			});
+		});
+
 
 /* 		this.registerMarkdownPostProcessor((element) => {
             // Target paragraphs, lists, and divs
