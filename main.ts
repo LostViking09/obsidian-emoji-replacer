@@ -32,77 +32,92 @@ export default class EmojiReplacer extends Plugin {
 				return; 
 			}
 			
-			this.registerMarkdownPostProcessor((element) => {
-				element.querySelectorAll("p, li, div").forEach(async (el) => {
-					if (el.textContent) {
-						// Process each character in the text content
-						for (const char of el.textContent) {
-							// First check if we have a custom mapping for this emoji
-							if (this.settings.customEmojiMappings[char]) {
+			// Helper function to safely replace text with SVG icon
+			const replaceTextWithIcon = async (textNode: Text, emoji: string, svg: HTMLElement) => {
+				const text = textNode.textContent || "";
+				const index = text.indexOf(emoji);
+				if (index === -1) return false;
+
+				// Create text nodes for content before and after the emoji
+				const before = document.createTextNode(text.substring(0, index));
+				const after = document.createTextNode(text.substring(index + emoji.length));
+
+				// Insert the nodes in the correct order
+				const parent = textNode.parentNode;
+				if (parent) {
+					parent.insertBefore(before, textNode);
+					parent.insertBefore(svg.cloneNode(true), textNode);
+					parent.insertBefore(after, textNode);
+					parent.removeChild(textNode);
+					return true;
+				}
+				return false;
+			};
+
+			// Helper function to process text nodes recursively
+			const processTextNodes = async (node: Node) => {
+				if (node.nodeType === Node.TEXT_NODE) {
+					const text = node.textContent || "";
+					for (const char of text) {
+						// First check if we have a custom mapping for this emoji
+						if (this.settings.customEmojiMappings[char]) {
 							const customIconId = this.settings.customEmojiMappings[char];
 							
 							if (iconSC.hasIcon(customIconId)) {
 								const svg = await iconSC.getSVGIcon(customIconId);
-								if (svg) {
-									el.innerHTML = el.innerHTML.replace(char, svg.outerHTML);
-									continue; // Skip to next character after replacement
-								}
-							}
-							}
-							
-							// Skip node-emoji functionality on mobile devices
-							if (this.isMobileDevice) {
-								continue; // Skip to next character without using node-emoji
-							}
-							
-							// Fall back to default logic if enabled and no custom mapping or if custom mapping failed
-							if (this.settings.enableDefaultIconSearch && iconSC.isEmoji(char)) {
-								try {
-									// Dynamically import node-emoji only when needed (on desktop)
-									if (!this.emojiModule) {
-										try {
-											// Dynamic import
-											this.emojiModule = await import("node-emoji");
-										} catch (importError) {
-											console.error("Failed to import node-emoji:", importError);
-											continue; // Skip this character if import fails
-										}
-									}
-									
-									// Now use the dynamically imported module
-									const emojiData = this.emojiModule.find(char);
-									if (emojiData) {
-										// Convert emoji shortcode to potential Lucide icon name
-										const lucideId = `luc_${emojiData.key}`;
-										if (iconSC.hasIcon(lucideId)) {
-											const svg = await iconSC.getSVGIcon(lucideId);
-											if (svg) {
-												el.innerHTML = el.innerHTML.replace(char, svg.outerHTML);
-											}
-										}
-									}
-								} catch (error) {
-									console.error("Error using node-emoji:", error);
-									// Silently fail on error - this allows the plugin to continue working
-									// even if node-emoji throws an error
+								if (svg && await replaceTextWithIcon(node as Text, char, svg as HTMLElement)) {
+									break; // Exit loop after successful replacement
 								}
 							}
 						}
+						
+						// Skip node-emoji functionality on mobile devices
+						if (this.isMobileDevice) {
+							continue;
+						}
+						
+						// Fall back to default logic if enabled and no custom mapping or if custom mapping failed
+						if (this.settings.enableDefaultIconSearch && iconSC.isEmoji(char)) {
+							try {
+								// Dynamically import node-emoji only when needed (on desktop)
+								if (!this.emojiModule) {
+									try {
+										this.emojiModule = await import("node-emoji");
+									} catch (importError) {
+										console.error("Failed to import node-emoji:", importError);
+										continue;
+									}
+								}
+								
+								const emojiData = this.emojiModule.find(char);
+								if (emojiData) {
+									const lucideId = `luc_${emojiData.key}`;
+									if (iconSC.hasIcon(lucideId)) {
+										const svg = await iconSC.getSVGIcon(lucideId);
+										if (svg && await replaceTextWithIcon(node as Text, char, svg as HTMLElement)) {
+											break; // Exit loop after successful replacement
+										}
+									}
+								}
+							} catch (error) {
+								console.error("Error using node-emoji:", error);
+							}
+						}
 					}
+				} else {
+					// Process child nodes recursively
+					for (const child of Array.from(node.childNodes)) {
+						await processTextNodes(child);
+					}
+				}
+			};
+
+			this.registerMarkdownPostProcessor((element) => {
+				element.querySelectorAll("p, li, div").forEach(async (el) => {
+					await processTextNodes(el);
 				});
 			});
 		});
-
-
-/* 		this.registerMarkdownPostProcessor((element) => {
-            // Target paragraphs, lists, and divs
-            element.querySelectorAll("p, li, div").forEach((el) => {
-                if (el.textContent?.includes("📅")) {
-                    // Replace ONLY in rendered content
-                    el.innerHTML = el.innerHTML.replace(/📅/g, ":LiCalendar:");
-                }
-            });
-        }); */
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EmojiReplacerSettingTab(this.app, this));
