@@ -54,6 +54,44 @@ export default class EmojiReplacer extends Plugin {
 				return false;
 			};
 
+			// Helper function to check if a character is a true emoji
+			const isRealEmoji = (char: string): boolean => {
+				// Basic emoji Unicode ranges
+				const emojiRanges = [
+					[0x1F600, 0x1F64F], // Emoticons
+					[0x1F300, 0x1F5FF], // Misc Symbols and Pictographs
+					[0x1F680, 0x1F6FF], // Transport and Map
+					[0x1F700, 0x1F77F], // Alchemical Symbols
+					[0x1F780, 0x1F7FF], // Geometric Shapes
+					[0x1F800, 0x1F8FF], // Supplemental Arrows-C
+					[0x1F900, 0x1F9FF], // Supplemental Symbols and Pictographs
+					[0x1FA00, 0x1FA6F], // Chess Symbols
+					[0x1FA70, 0x1FAFF], // Symbols and Pictographs Extended-A
+					[0x2600, 0x26FF],   // Misc symbols
+					[0x2700, 0x27BF],   // Dingbats
+					[0x2B50, 0x2B50],   // Star
+					[0x231A, 0x231B],   // Watch and Hourglass
+					[0x23E9, 0x23F3],   // Media player symbols
+					[0x25FB, 0x25FE],   // Geometric shapes
+					[0x2934, 0x2935],   // Arrows
+					[0x2B05, 0x2B07],   // Arrows
+					[0x2B1B, 0x2B1C],   // Black and White squares
+					[0x3030, 0x3030],   // Wavy dash
+					[0x303D, 0x303D],   // Part alternation mark
+					[0x3297, 0x3297],   // Japanese "congratulations" symbol
+					[0x3299, 0x3299]    // Japanese "secret" symbol
+				];
+				
+				// Get the Unicode code point of the character
+				const codePoint = char.codePointAt(0);
+				if (!codePoint) return false;
+				
+				// Check if the code point falls within any emoji range
+				return emojiRanges.some(([start, end]) => 
+					codePoint >= start && codePoint <= end
+				);
+			};
+
 			// Helper function to process text nodes recursively
 			const processTextNodes = async (node: Node) => {
 				if (node.nodeType === Node.TEXT_NODE) {
@@ -77,7 +115,7 @@ export default class EmojiReplacer extends Plugin {
 						}
 						
 						// Fall back to default logic if enabled and no custom mapping or if custom mapping failed
-						if (this.settings.enableDefaultIconSearch && iconSC.isEmoji(char)) {
+						if (this.settings.enableDefaultIconSearch && iconSC.isEmoji(char) && isRealEmoji(char)) {
 							try {
 								// Dynamically import node-emoji only when needed (on desktop)
 								if (!this.emojiModule) {
